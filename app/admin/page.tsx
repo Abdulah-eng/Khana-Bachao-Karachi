@@ -141,6 +141,40 @@ export default function AdminDashboard() {
         router.push('/login')
     }
 
+    const handleDeleteUser = async (userId: string) => {
+        if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+            return
+        }
+
+        try {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) throw new Error('Not authenticated')
+
+            const response = await fetch('/api/admin/delete-user', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    userId,
+                    requestingUserId: user.id
+                }),
+            })
+
+            const data = await response.json()
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to delete user')
+            }
+
+            alert('User deleted successfully')
+            loadData() // Refresh list
+        } catch (error: any) {
+            console.error('Delete error:', error)
+            alert(error.message || 'Failed to delete user')
+        }
+    }
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -215,8 +249,8 @@ export default function AdminDashboard() {
                     </div>
                     {insightsMessage && (
                         <div className={`mt-4 p-4 rounded-lg ${insightsMessage.startsWith('✅')
-                                ? 'bg-green-500/20 border border-green-500 text-green-400'
-                                : 'bg-red-500/20 border border-red-500 text-red-400'
+                            ? 'bg-green-500/20 border border-green-500 text-green-400'
+                            : 'bg-red-500/20 border border-red-500 text-red-400'
                             }`}>
                             {insightsMessage}
                         </div>
@@ -314,6 +348,7 @@ export default function AdminDashboard() {
                                     <th className="text-left py-3 px-4">Role</th>
                                     <th className="text-left py-3 px-4">Verified</th>
                                     <th className="text-left py-3 px-4">Joined</th>
+                                    <th className="text-left py-3 px-4">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -343,6 +378,17 @@ export default function AdminDashboard() {
                                         </td>
                                         <td className="py-3 px-4 text-sm text-gray-400">
                                             {formatRelativeTime(user.created_at)}
+                                        </td>
+                                        <td className="py-3 px-4">
+                                            {user.role !== 'admin' && (
+                                                <button
+                                                    onClick={() => handleDeleteUser(user.id)}
+                                                    className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2 rounded-lg transition-colors"
+                                                    title="Delete User"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-trash-2"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" x2="10" y1="11" y2="17" /><line x1="14" x2="14" y1="11" y2="17" /></svg>
+                                                </button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
