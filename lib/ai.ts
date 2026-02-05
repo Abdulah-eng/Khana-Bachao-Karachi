@@ -140,6 +140,65 @@ Example return: ["insight 1", "insight 2", ...]`
 }
 
 /**
+ * Analyze user behavior to infer preferences and patterns
+ */
+export async function analyzeUserBehavior(
+    history: any[]
+): Promise<{
+    summary: string
+    inferred_preferences: string[]
+    suggested_actions: string[]
+}> {
+    try {
+        const model = genAI.getGenerativeModel({
+            model: 'gemini-2.5-flash',
+            generationConfig: {
+                responseMimeType: 'application/json',
+            }
+        })
+
+        const prompt = `Analyze this user's donation acceptance history and infer their preferences and behavior patterns.
+
+User History: ${JSON.stringify(history)}
+
+Provide:
+1. A brief summary of their behavior (e.g., "Prefers vegetarian food, mostly active on weekends").
+2. Inferred food preferences (list of categories like "vegetarian", "non-vegetarian", "vegan", "cooked meals", "raw ingredients").
+3. Suggested actions or notifications (e.g., "Notify for large veg donations").
+
+IMPORTANT: Respond ONLY with a valid JSON object.
+Format:
+{
+  "summary": "User prefers vegetarian food...",
+  "inferred_preferences": ["vegetarian", "vegan"],
+  "suggested_actions": ["Notify for veg food", "Suggest weekend pickups"]
+}`
+
+        const result = await model.generateContent(prompt)
+        const response = await result.response
+        const text = response.text()
+
+        // Clean up markdown code blocks if present
+        const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim()
+
+        const jsonMatch = cleanText.match(/\{[\s\S]*\}/)
+        if (!jsonMatch) {
+            throw new Error("Failed to parse AI response")
+        }
+
+        return JSON.parse(jsonMatch[0])
+
+    } catch (error) {
+        console.error('User analysis error:', error)
+        return {
+            summary: "Analysis failed",
+            inferred_preferences: [],
+            suggested_actions: []
+        }
+    }
+}
+
+/**
  * Generate chatbot response
  */
 export async function generateChatbotResponse(
@@ -159,31 +218,31 @@ PLATFORM INFORMATION:
 
 KEY FEATURES:
 1. DONOR FEATURES:
-   - Register and create donation listings with photos
-   - AI analyzes food quality and suggests expiry times
-   - Get matched with nearby verified NGOs (within 10km)
-   - Earn Green Points for successful donations
-   - Track donation history and impact
+    - Register and create donation listings with photos
+    - AI analyzes food quality and suggests expiry times
+    - Get matched with nearby verified NGOs (within 10km)
+    - Earn Green Points for successful donations
+    - Track donation history and impact
 
 2. NGO/ACCEPTOR FEATURES:
-   - Verified organizations can browse available donations
-   - Accept donations based on their needs
-   - Real-time notifications for new donations in their area
-   - Must be verified by admin to ensure legitimacy
+    - Verified organizations can browse available donations
+    - Accept donations based on their needs
+    - Real-time notifications for new donations in their area
+    - Must be verified by admin to ensure legitimacy
 
 3. GREEN POINTS SYSTEM:
-   - Earn points for each successful donation
-   - Higher quality food = more points
-   - Points visible on donor dashboard
-   - Encourages consistent donations
+    - Earn points for each successful donation
+    - Higher quality food = more points
+    - Points visible on donor dashboard
+    - Encourages consistent donations
 
 4. REGISTRATION:
-   - Donors: Sign up with email, create profile, start donating
-   - NGOs: Sign up, submit verification documents, wait for admin approval
+    - Donors: Sign up with email, create profile, start donating
+    - NGOs: Sign up, submit verification documents, wait for admin approval
 
 5. COVERAGE AREAS:
-   - All major areas in Karachi including DHA, Gulshan, Clifton, Saddar, North Nazimabad, etc.
-   - Maximum matching distance: 10km for convenient pickup
+    - All major areas in Karachi including DHA, Gulshan, Clifton, Saddar, North Nazimabad, etc.
+    - Maximum matching distance: 10km for convenient pickup
 
 ${context ? `Additional Context: ${context}` : ''}
 

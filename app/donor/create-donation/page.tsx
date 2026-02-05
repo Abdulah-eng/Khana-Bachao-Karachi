@@ -134,7 +134,7 @@ export default function CreateDonationPage() {
                 available_until: new Date(formData.availableUntil).toISOString(),
                 ai_quality_score: aiAnalysis?.quality_score,
                 ai_category: aiAnalysis?.category,
-                ai_expiry_prediction: aiAnalysis?.expiry_prediction?.toISOString(),
+                ai_expiry_prediction: aiAnalysis?.expiry_prediction,
                 image_url: imageUrl,
             })
 
